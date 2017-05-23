@@ -4,7 +4,7 @@ library(leaflet)
 library(shiny)
 
 # load data ---------------------------------------------------------
-datafest <- read_csv("../../data/datafest.csv")
+datafest <- read_csv("data/datafest.csv")
 
 # set colors --------------------------------------------------------
 href_color <- "#A7C6C6"
@@ -27,6 +27,7 @@ max_tot_part <- max(part_count$tot_part)
 
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
+  titlePanel("DataFest over the years"),
   sidebarLayout(
     sidebarPanel(
       sliderInput("year", "Year", value = 2011, 
@@ -38,7 +39,7 @@ ui <- fluidPage(
            of <a href='http://www.amstat.org/education/datafest/'>ASA 
            DataFest</a> over the years. Click on the points to find out 
            more about each event. If your institution does not appear on 
-           the list, email <a href='maito:mine@stat.duke.edu'>mine@stat.duke.edu</a>.")
+           the list, email <a href='mailto:mine@stat.duke.edu'>mine@stat.duke.edu</a>.")
     ),
     mainPanel(
       leafletOutput("leaflet"),
