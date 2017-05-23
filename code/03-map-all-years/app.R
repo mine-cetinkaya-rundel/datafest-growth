@@ -18,8 +18,10 @@ bottom <- floor(min(datafest$lat))
 top <- ceiling(max(datafest$lat))
 
 # calculate total participants for each year ------------------------
-part_count <- data_frame(year = 2011:2017,
-                         tot_part = colSums(datafest[grep("num_part", names(datafest))], na.rm = TRUE))
+part_count <- datafest %>%
+  group_by(year) %>%
+  summarise(tot_part = sum(num_part, na.rm = TRUE))
+
 min_tot_part <- min(part_count$tot_part)
 max_tot_part <- max(part_count$tot_part)
 
@@ -27,10 +29,16 @@ max_tot_part <- max(part_count$tot_part)
 ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
-      sliderInput("year", "Select Year", value = 2011, 
+      sliderInput("year", "Year", value = 2011, 
                   min = 2011, max = 2017, step = 1,  
                   animate = animationOptions(interval = 1500), 
-                  sep = "")
+                  sep = ""),
+      br(),
+      HTML("This app is designed to demonstrate the growth and spread
+           of <a href='http://www.amstat.org/education/datafest/'>ASA 
+           DataFest</a> over the years. Click on the points to find out 
+           more about each event. If your institution does not appear on 
+           the list, email <a href='maito:mine@stat.duke.edu'>mine@stat.duke.edu</a>.")
     ),
     mainPanel(
       leafletOutput("leaflet"),
@@ -43,29 +51,25 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   d <- reactive({
-    year_var <- paste0("df_", input$year)
-    filter_(datafest, paste(year_var, "== 'Yes'"))
+    filter(datafest, year == input$year & df == "Yes")
   })
   
   output$leaflet <- renderLeaflet({
     
-    other_inst <- paste0("other_inst_", input$year)
-    num_part <- paste0("num_part_", input$year)
-    radius <- paste0("radius_", input$year)
-    
     popups <- paste0(
       "<b><a href='", d()$url, "' style='color:", href_color, "'>", d()$host, "</a></b>",
-      ifelse(is.na(d()[[other_inst]]), "",
-             paste0("<br>", "with participation from ", d()[[other_inst]])),
+      ifelse(is.na(d()$other_inst), "",
+             paste0("<br>", "with participation from ", d()$other_inst)),
       "<br>",
-      paste0("<font color=", part_color,">", d()[[num_part]], " participants</font>"))
+      paste0("<font color=", part_color,">", d()$num_part, " participants</font>"))
     
     leaflet() %>%
       addTiles() %>%
       fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>%
       addCircleMarkers(lng = d()$lon, lat = d()$lat,
-                       radius = d()[[radius]] * 1.5, 
+                       radius = d()$radius, 
                        fillColor = marker_color,
+                       color = marker_color,
                        weight = 1,
                        fillOpacity = 0.5,
                        popup = popups)
