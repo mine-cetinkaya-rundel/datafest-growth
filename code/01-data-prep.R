@@ -28,7 +28,7 @@ datafest_wide <- datafest_wide %>%
 
 # convert data to long format ---------------------------------------
 datafest_long <- datafest_wide %>% 
-  gather(key, value, df_2011:other_inst_2017, -timestamp) %>%
+  gather(key, value, df_2011:other_inst_2017) %>%
   mutate(year = as.numeric(str_match(key, "[0-9]+"))) %>%
   mutate(key = str_replace(key, "_[0-9]+", "")) %>%
   spread(key, value) %>%
