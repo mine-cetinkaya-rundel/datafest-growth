@@ -5,57 +5,43 @@ library(devtools)
 # install dev version of ggmap where mutate_geocode works with tbl_df
 # install_github("dkahle/ggmap") 
 library(ggmap)
+library(stringr)
 
 # get data ----------------------------------------------------------
-datafest <- gs_title("DataFest over the years (Responses)") %>%
+datafest_wide <- gs_title("DataFest over the years (Responses)") %>%
   gs_read()
 
 # write raw data (for blog post) ------------------------------------
-write_csv(datafest, path = "data/datafest-raw.csv")
+write_csv(datafest_wide, path = "data/datafest-raw.csv")
 
 # rename columns ----------------------------------------------------
 yrs <- sort(rep(2011:2017, 3))
 cols <- c("df_", "num_part_", "other_inst_")
 
-names(datafest) <- c("timestamp", "host", "city", "state", "country", "url",
+names(datafest_wide) <- c("timestamp", "host", "city", "state", "country", "url",
                      paste0(cols, yrs))
 
 # geocode host location ---------------------------------------------
-datafest <- datafest %>%
+datafest_wide <- datafest_wide %>%
   mutate(address = paste(city, state, country)) %>%
   mutate_geocode(address)
 
-# calculate radius size for points on map ---------------------------
-min_part <- min(datafest$num_part_2011,
-                datafest$num_part_2012,
-                datafest$num_part_2013,
-                datafest$num_part_2014,
-                datafest$num_part_2015,
-                datafest$num_part_2017, 
-                na.rm = TRUE)
+# convert data to long format ---------------------------------------
+datafest_long <- datafest_wide %>% 
+  gather(key, value, df_2011:other_inst_2017, -timestamp) %>%
+  mutate(year = as.numeric(str_match(key, "[0-9]+"))) %>%
+  mutate(key = str_replace(key, "_[0-9]+", "")) %>%
+  spread(key, value) %>%
+  mutate(num_part = as.numeric(num_part))
 
-max_part <- max(datafest$num_part_2011,
-                datafest$num_part_2012,
-                datafest$num_part_2013,
-                datafest$num_part_2014,
-                datafest$num_part_2015,
-                datafest$num_part_2017,
-                na.rm = TRUE)
+# calculate radius size for points on map ---------------------------
+min_part <- min(datafest_long$num_part, na.rm = TRUE)
+max_part <- max(datafest_long$num_part, na.rm = TRUE)
 
 range_part <- max_part - min_part                                                                          
-
 range_step <- range_part / 10
 
-datafest <- datafest %>%
-  mutate(
-    radius_2017 = num_part_2017 / range_step,
-    radius_2016 = num_part_2016 / range_step,
-    radius_2015 = num_part_2015 / range_step,
-    radius_2014 = num_part_2014 / range_step,
-    radius_2013 = num_part_2013 / range_step,
-    radius_2012 = num_part_2012 / range_step,
-    radius_2011 = num_part_2011 / range_step
-  )
+datafest_long <- mutate(datafest_long, radius = num_part / range_step)
 
 # write prepped data ------------------------------------------------
-write_csv(datafest, path = "data/datafest.csv")
+write_csv(datafest_long, path = "data/datafest.csv")
