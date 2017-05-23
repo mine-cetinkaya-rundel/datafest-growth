@@ -13,25 +13,32 @@ datafest_2017 <- datafest %>%
 d <- datafest_2017 
 
 # set colors --------------------------------------------------------
-popup_fill <- "#FF6100"
-popup_stroke <- "#632500"
+href_color <- "#A7C6C6"
+marker_color <- "black"
+part_color <- "#89548A"
+
+# set map bounds ----------------------------------------------------
+left <- floor(min(datafest$lon))
+right <- ceiling(max(datafest$lon))
+bottom <- floor(min(datafest$lat))
+top <- ceiling(max(datafest$lat))
+
 
 # define popups -----------------------------------------------------
 popups <- paste0(
-  "<b><a href='", d$url, "' style='color:", popup_fill, "'>", d$host, "</a></b>",
+  "<b><a href='", d$url, "' style='color:", popup_color, "'>", d$host, "</a></b>",
   ifelse(is.na(d$other_inst_2017), "",
          paste0("<br>", "with participation from ", d$other_inst_2017)),
   "<br>", 
-  d$num_part_2017, " participants")
+  paste0("<font color=", part_color,">", d$num_part_2017, " participants</font>"))
 
 # plot map ----------------------------------------------------------
 leaflet() %>%
   addTiles() %>%
+  fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>%
   addCircleMarkers(lng = d$lon, lat = d$lat,
-                   radius = 5, 
-                   fillColor = popup_fill,
-                   color = popup_stroke,
-                   stroke = TRUE, 
+                   radius = d$radius_2017 * 1.5, 
+                   fillColor = marker_color,
                    weight = 1,
-                   fillOpacity = 0.7,
+                   fillOpacity = 0.5,
                    popup = popups)
