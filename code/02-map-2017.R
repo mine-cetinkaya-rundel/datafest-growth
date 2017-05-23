@@ -35,6 +35,7 @@ leaflet() %>%
   addCircleMarkers(lng = datafest_2017$lon, lat = datafest_2017$lat,
                    radius = datafest_2017$radius * 1.5, 
                    fillColor = marker_color,
+                   color = marker_color,
                    weight = 1,
                    fillOpacity = 0.5,
                    popup = popups)
