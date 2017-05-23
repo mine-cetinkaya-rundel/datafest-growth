@@ -6,11 +6,7 @@ library(leaflet)
 datafest <- read_csv("data/datafest.csv")
 
 # filter for 2017 events --------------------------------------------
-datafest_2017 <- datafest %>%
-  filter(df_2017 == "Yes")
-
-# set generic dataframe reference -----------------------------------
-d <- datafest_2017 
+datafest_2017 <- filter(datafest, year == 2017 & df == "Yes")
 
 # set colors --------------------------------------------------------
 href_color <- "#A7C6C6"
@@ -26,18 +22,18 @@ top <- ceiling(max(datafest$lat))
 
 # define popups -----------------------------------------------------
 popups <- paste0(
-  "<b><a href='", d$url, "' style='color:", popup_color, "'>", d$host, "</a></b>",
-  ifelse(is.na(d$other_inst_2017), "",
-         paste0("<br>", "with participation from ", d$other_inst_2017)),
+  "<b><a href='", datafest_2017$url, "' style='color:", href_color, "'>", datafest_2017$host, "</a></b>",
+  ifelse(is.na(datafest_2017 $other_inst), "",
+         paste0("<br>", "with participation from ", datafest_2017$other_inst)),
   "<br>", 
-  paste0("<font color=", part_color,">", d$num_part_2017, " participants</font>"))
+  paste0("<font color=", part_color,">", datafest_2017$num_part, " participants</font>"))
 
 # plot map ----------------------------------------------------------
 leaflet() %>%
   addTiles() %>%
   fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>%
-  addCircleMarkers(lng = d$lon, lat = d$lat,
-                   radius = d$radius_2017 * 1.5, 
+  addCircleMarkers(lng = datafest_2017$lon, lat = datafest_2017$lat,
+                   radius = datafest_2017$radius * 1.5, 
                    fillColor = marker_color,
                    weight = 1,
                    fillOpacity = 0.5,
