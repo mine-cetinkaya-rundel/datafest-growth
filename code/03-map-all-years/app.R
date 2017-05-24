@@ -1,33 +1,9 @@
-# load packages -----------------------------------------------------
-library(tidyverse)
-library(leaflet)
-library(shiny)
-
-# load data ---------------------------------------------------------
-datafest <- read_csv("data/datafest.csv")
-
-# set colors --------------------------------------------------------
-href_color <- "#A7C6C6"
-marker_color <- "black"
-part_color <- "#89548A"
-
-# set map bounds ----------------------------------------------------
-left <- floor(min(datafest$lon))
-right <- ceiling(max(datafest$lon))
-bottom <- floor(min(datafest$lat))
-top <- ceiling(max(datafest$lat))
-
-# calculate total participants for each year ------------------------
-part_count <- datafest %>%
-  group_by(year) %>%
-  summarise(tot_part = sum(num_part, na.rm = TRUE))
-
-min_tot_part <- min(part_count$tot_part)
-max_tot_part <- max(part_count$tot_part)
+# load helpers ------------------------------------------------------
+source("helper.R", local = TRUE)
 
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
-  titlePanel("DataFest over the years"),
+  titlePanel("ASA DataFest over the years"),
   sidebarLayout(
     sidebarPanel(
       sliderInput("year", "Year", value = 2011, 
@@ -35,14 +11,14 @@ ui <- fluidPage(
                   animate = animationOptions(interval = 1500), 
                   sep = ""),
       br(),
-      HTML("This app is designed to demonstrate the growth and spread
-           of <a href='http://www.amstat.org/education/datafest/'>ASA 
-           DataFest</a> over the years. Click on the points to find out 
-           more about each event. If your institution does not appear on 
-           the list, email <a href='mailto:mine@stat.duke.edu'>mine@stat.duke.edu</a>.")
+      p("This app is designed to demonstrate the growth and spread of",
+        tags$a(href = "http://www.amstat.org/education/datafest/", "ASA DataFest"),
+        "over the years. Click on the points to find out more about each event.",
+        "If your institution does not appear on the list, email",
+        tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
     ),
     mainPanel(
-      leafletOutput("leaflet"),
+      leafletOutput("map"),
       plotOutput("line", height = "200px")
     )
   )
@@ -55,28 +31,51 @@ server <- function(input, output, session) {
     filter(datafest, year == input$year & df == "Yes")
   })
   
-  output$leaflet <- renderLeaflet({
+  output$map <- renderLeaflet({
+    leaflet() %>% 
+      addTiles() %>% 
+      fitBounds(left, bottom, right, top)
+  })
+  
+  observeEvent(d(), {
+    
+    mapProxy <- leafletProxy("map", session)
+    
+    # clear previous controls and markers each time input$year changes
+    clearControls(mapProxy)
+    clearMarkers(mapProxy)
+    
+    # define popups
+    host_text <- paste0(
+      "<b><a href='", d()$url, "' style='color:", href_color, "'>", d()$host, "</a></b>"
+    )
+    
+    other_inst_text <- paste0(
+      ifelse(is.na(d()$other_inst), 
+             "", 
+             paste0("<br>", "with participation from ", d()$other_inst))
+    )
+    
+    part_text <- paste0(
+      "<font color=", part_color,">", d()$num_part, " participants</font>"
+      )
     
     popups <- paste0(
-      "<b><a href='", d()$url, "' style='color:", href_color, "'>", d()$host, "</a></b>",
-      ifelse(is.na(d()$other_inst), "",
-             paste0("<br>", "with participation from ", d()$other_inst)),
-      "<br>",
-      paste0("<font color=", part_color,">", d()$num_part, " participants</font>"))
+      host_text, other_inst_text, "<br>" , part_text
+    )
     
-    leaflet() %>%
-      addTiles() %>%
-      fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>%
+    mapProxy %>%
+      addControl(h1(input$year), position = "topright") %>%
       addCircleMarkers(lng = d()$lon, lat = d()$lat,
-                       radius = d()$radius, 
+                       radius = log(d()$num_part), 
                        fillColor = marker_color,
                        color = marker_color,
                        weight = 1,
                        fillOpacity = 0.5,
                        popup = popups)
-    
   })
   
+
   output$line <- renderPlot({
     
     sel_part_count <- filter(part_count, year <= input$year)
