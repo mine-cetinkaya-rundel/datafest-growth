@@ -34,14 +34,5 @@ datafest_long <- datafest_wide %>%
   spread(key, value) %>%
   mutate(num_part = as.numeric(num_part))
 
-# calculate radius size for points on map ---------------------------
-min_part <- min(datafest_long$num_part, na.rm = TRUE)
-max_part <- max(datafest_long$num_part, na.rm = TRUE)
-
-range_part <- max_part - min_part                                                                          
-range_step <- range_part / 10
-
-datafest_long <- mutate(datafest_long, radius = num_part / range_step)
-
 # write prepped data ------------------------------------------------
 write_csv(datafest_long, path = "data/datafest.csv")
